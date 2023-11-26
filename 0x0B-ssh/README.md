@@ -1,1 +1,1 @@
-ssh configuration(0x0B. SSH)
+ssh configuration(0x0B. SSH).
