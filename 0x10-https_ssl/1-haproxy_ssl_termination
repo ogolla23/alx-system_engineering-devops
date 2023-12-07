@@ -17,6 +17,9 @@ global
         ssl-default-bind-ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
         ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets
 
+# Set the default Diffie-Hellman parameter size to 2048 bits
+        tune.ssl.default-dh-param 2048
+
 defaults
         log     global
         mode    http
@@ -32,3 +35,22 @@ defaults
         errorfile 502 /etc/haproxy/errors/502.http
         errorfile 503 /etc/haproxy/errors/503.http
         errorfile 504 /etc/haproxy/errors/504.http
+frontend www-http
+    bind   0.0.0.0:80
+    http-request set-header X-Forwarded-Proto http
+    default_backend www-backend
+frontend www-https
+    bind   0.0.0.0:443 ssl crt /etc/letsencrypt/archive/www.leonardogolla.tech/www.leonardogolla.tech.pem
+    http-request set-header X-Forwarded-Proto https
+    acl    letsencrypt-acl path_beg /.well-known/acme-challenge/
+    use_backend letsencrypt-backend if letsencrypt-acl
+    default_backend www-backend
+
+backend www-backend
+    balance  roundrobin
+    redirect scheme https if !{ ssl_fc }
+    server 200646-web-01 54.162.103.111:80 check
+    server 200646-web-02 54.172.228.128:80 check
+
+backend letsencrypt-backend
+    server letsencrypt 127.0.0.1:54321
